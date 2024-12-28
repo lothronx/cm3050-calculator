@@ -11,6 +11,27 @@ const primaryColor = "rgb(233,234,234)";
 const lightGrayColor = "rgb(114,120,124)";
 const darkGrayColor = "rgb(80,90,94)";
 const highlightColor = "rgb(241,154,55)";
+const shadowColor = "rgba(0,0,0,0.5)";
+
+type CalculatorButtonProps = {
+  value: string;
+  onPress: (value: string) => void;
+  backgroundColor: string;
+  style?: object;
+};
+
+const CalculatorButton = ({ value, onPress, backgroundColor, style }: CalculatorButtonProps) => (
+  <View style={[styles.buttonContainer, style]}>
+    <TouchableOpacity
+      key={value}
+      onPress={() => onPress(value)}
+      style={[styles.button, { backgroundColor }, style]}
+      activeOpacity={0.7}
+      pressRetentionOffset={{ top: 10, left: 10, right: 10, bottom: 10 }}>
+      <Text style={styles.buttonText}>{value}</Text>
+    </TouchableOpacity>
+  </View>
+);
 
 export default function Index() {
   const lightGrayButtons = ["C", "+/-", "%"];
@@ -111,44 +132,43 @@ export default function Index() {
             <View style={styles.leftSection}>
               <View style={styles.row}>
                 {lightGrayButtons.map((button) => (
-                  <TouchableOpacity
+                  <CalculatorButton
                     key={button}
-                    onPress={() => buttonPressed(button)}
-                    style={[styles.button, { backgroundColor: lightGrayColor }]}>
-                    <Text style={styles.buttonText}>{button}</Text>
-                  </TouchableOpacity>
+                    value={button}
+                    onPress={buttonPressed}
+                    backgroundColor={lightGrayColor}
+                  />
                 ))}
               </View>
               {darkGrayButtons.map((row, i) => (
                 <View key={`row-${i}`} style={styles.row}>
                   {row.map((button) => (
-                    <TouchableOpacity
+                    <CalculatorButton
                       key={button}
-                      onPress={() => buttonPressed(button)}
-                      style={[
-                        styles.button,
-                        { backgroundColor: darkGrayColor },
+                      value={button}
+                      onPress={buttonPressed}
+                      backgroundColor={darkGrayColor}
+                      style={
                         button === "0"
                           ? {
                               width: buttonWidth * 2 + buttonMargin * 2,
                               paddingRight: buttonWidth + buttonMargin,
                             }
-                          : null,
-                      ]}>
-                      <Text style={styles.buttonText}>{button}</Text>
-                    </TouchableOpacity>
+                          : undefined
+                      }
+                    />
                   ))}
                 </View>
               ))}
             </View>
             <View style={styles.rightSection}>
               {highlightButtons.map((button) => (
-                <TouchableOpacity
+                <CalculatorButton
                   key={button}
-                  onPress={() => buttonPressed(button)}
-                  style={[styles.button, { backgroundColor: highlightColor }]}>
-                  <Text style={styles.buttonText}>{button}</Text>
-                </TouchableOpacity>
+                  value={button}
+                  onPress={buttonPressed}
+                  backgroundColor={highlightColor}
+                />
               ))}
             </View>
           </View>
@@ -170,11 +190,15 @@ const styles = StyleSheet.create({
   },
   results: {
     fontSize: 58,
-    fontWeight: 600,
+    fontWeight: "600",
     textAlign: "right",
     color: primaryColor,
     margin: buttonMargin,
-    marginBottom: 10,
+    marginBottom: 20,
+    paddingHorizontal: 10,
+    textShadowColor: shadowColor,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   calculatorContainer: {
     flexDirection: "row",
@@ -189,10 +213,17 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
   },
-  button: {
+  buttonContainer: {
     margin: buttonMargin,
     width: buttonWidth,
     height: buttonWidth,
+    shadowColor: shadowColor,
+    shadowOffset: { width: 2, height: 2 },
+    shadowRadius: 2,
+    elevation: 8,
+  },
+  button: {
+    flex: 1,
     borderRadius: buttonWidth,
     alignItems: "center",
     justifyContent: "center",
@@ -200,7 +231,10 @@ const styles = StyleSheet.create({
   buttonText: {
     color: primaryColor,
     fontSize: 36,
-    fontWeight: 500,
+    fontWeight: "500",
     textAlign: "center",
+    textShadowColor: shadowColor,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 });
