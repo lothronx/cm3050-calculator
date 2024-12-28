@@ -58,7 +58,8 @@ export default function Index() {
 
   // State variables
   const [lastInputType, setLastInputType] = useState<"number" | "operator" | "">("");
-  const [expression, setExpression] = useState("0");
+  const [answerValue, setAnswerValue] = useState("0");
+  const [expression, setExpression] = useState("");
 
   // Button component props
   type ButtonProps = {
@@ -84,32 +85,37 @@ export default function Index() {
   const buttonPressed = (value: string): void => {
     if (value === "C") {
       setLastInputType("");
-      setExpression("0");
+      setAnswerValue("0");
+      setExpression("");
     }
+
     if (value === "=") {
       setLastInputType("");
-      setExpression(calculateEquals());
+      setExpression(answerValue);
+      setAnswerValue(calculateEquals());
     }
 
     // Handle numbers and number-like values
     if (!isNaN(Number(value)) || [".", "+/-", "%"].includes(value)) {
       setLastInputType("number");
-      setExpression(handleNumber(value));
+      setAnswerValue(handleNumber(value));
+      setExpression("");
     }
 
     // Handle operators
     if (["÷", "×", "-", "+"].includes(value)) {
       handleOperator(value);
+      setExpression("");
     }
   };
 
   // Handle operator input
   const handleOperator = (operator: string): void => {
     if (lastInputType === "operator") {
-      setExpression(expression.slice(0, -1) + operator);
+      setAnswerValue(answerValue.slice(0, -1) + operator);
     } else {
       setLastInputType("operator");
-      setExpression(expression + operator);
+      setAnswerValue(answerValue + operator);
     }
   };
 
@@ -121,7 +127,7 @@ export default function Index() {
 
     // Handle special cases
     if (shouldReturnUnchanged(value, currentNumber)) {
-      return expression;
+      return answerValue;
     }
 
     // Handle +/- toggle
@@ -131,7 +137,7 @@ export default function Index() {
 
     // Handle zero input
     if (value === "0" && currentNumber === "0") {
-      return expression;
+      return answerValue;
     }
 
     // Handle number replacing zero
@@ -140,19 +146,19 @@ export default function Index() {
     }
 
     // Handle  number input right after a closing parenthesis using the logic of Apple Calculator
-    if (expression.endsWith(")")) {
-      return expression + "×" + value;
+    if (answerValue.endsWith(")")) {
+      return answerValue + "×" + value;
     }
 
-    return expression + value;
+    return answerValue + value;
   };
 
   // Helper functions for number handling
   const findLastOperatorIndex = (): number => {
     return Math.max(
-      ...["÷", "×", "+"].map((op) => expression.lastIndexOf(op)),
-      ...expression.split("").reduce((indices, char, i) => {
-        if (char === "-" && expression[i - 1] !== "(") {
+      ...["÷", "×", "+"].map((op) => answerValue.lastIndexOf(op)),
+      ...answerValue.split("").reduce((indices, char, i) => {
+        if (char === "-" && answerValue[i - 1] !== "(") {
           indices.push(i);
         }
         return indices;
@@ -161,23 +167,23 @@ export default function Index() {
   };
 
   const getCurrentNumber = (lastOperatorIndex: number): string => {
-    return lastOperatorIndex === -1 ? expression : expression.slice(lastOperatorIndex + 1);
+    return lastOperatorIndex === -1 ? answerValue : answerValue.slice(lastOperatorIndex + 1);
   };
 
   const getExpressionBeforeNumber = (lastOperatorIndex: number): string => {
-    return lastOperatorIndex === -1 ? "" : expression.slice(0, lastOperatorIndex + 1);
+    return lastOperatorIndex === -1 ? "" : answerValue.slice(0, lastOperatorIndex + 1);
   };
 
   const shouldReturnUnchanged = (value: string, currentNumber: string): boolean => {
     if (
       value === "." &&
-      (!currentNumber || currentNumber.includes(".") || expression.endsWith(")"))
+      (!currentNumber || currentNumber.includes(".") || answerValue.endsWith(")"))
     ) {
       return true;
     }
     if (
       value === "%" &&
-      (!currentNumber || currentNumber.includes("%") || expression.endsWith(")"))
+      (!currentNumber || currentNumber.includes("%") || answerValue.endsWith(")"))
     ) {
       return true;
     }
@@ -191,7 +197,7 @@ export default function Index() {
     if (currentNumber) {
       return expressionBeforeCurrentNumber + "(-" + currentNumber + ")";
     }
-    return expression;
+    return answerValue;
   };
 
   // Calculate the final result
@@ -206,7 +212,9 @@ export default function Index() {
   };
 
   const prepareExpressionForEvaluation = (): string => {
-    return expression
+    const expressionToEvaluate =
+      lastInputType === "operator" ? answerValue.slice(0, -1) : answerValue;
+    return expressionToEvaluate
       .replace(/×/g, "*")
       .replace(/÷/g, "/")
       .replace(/(\d+\.?\d*|\))%/g, (match) => {
@@ -228,6 +236,21 @@ export default function Index() {
       flex: 1,
       justifyContent: "flex-end",
       margin: LAYOUT.CONTENT_MARGIN,
+    },
+    expressionField: {
+      margin: LAYOUT.BUTTON_MARGIN,
+      marginBottom: isLandscape ? 4 : 6,
+      flexGrow: 0,
+    },
+    expression: {
+      fontSize: isLandscape ? 18 : 28,
+      fontWeight: "500",
+      textAlign: "right",
+      paddingHorizontal: 10,
+      color: COLORS.LIGHT_GRAY,
+      textShadowColor: COLORS.SHADOW,
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 1,
     },
     resultsField: {
       margin: LAYOUT.BUTTON_MARGIN,
@@ -307,18 +330,38 @@ export default function Index() {
               flexGrow: 1,
               justifyContent: "flex-end",
             }}
-            style={styles.resultsField}
+            style={styles.expressionField}
             showsHorizontalScrollIndicator={false}
             maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
             ref={(scrollView) => {
-              // Scroll to end whenever expression changes
+              // Scroll to end whenever answerValue changes
               if (scrollView) {
                 setTimeout(() => {
                   scrollView.scrollToEnd({ animated: false });
                 }, 0);
               }
             }}>
-            <Text style={styles.results}>{expression}</Text>
+            <Text style={styles.expression}>{expression}</Text>
+          </ScrollView>
+          {/* The result field */}
+          <ScrollView
+            horizontal
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: "flex-end",
+            }}
+            style={styles.resultsField}
+            showsHorizontalScrollIndicator={false}
+            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+            ref={(scrollView) => {
+              // Scroll to end whenever answerValue changes
+              if (scrollView) {
+                setTimeout(() => {
+                  scrollView.scrollToEnd({ animated: false });
+                }, 0);
+              }
+            }}>
+            <Text style={styles.results}>{answerValue}</Text>
           </ScrollView>
           {/* The calculator container */}
           <View style={styles.calculatorContainer}>
