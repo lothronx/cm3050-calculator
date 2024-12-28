@@ -2,28 +2,42 @@ import { Text, View, StyleSheet, Dimensions, TouchableOpacity, StatusBar } from 
 import { useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-const contentMargin = 15;
-const buttonMargin = 6;
-const buttonWidth = (Dimensions.get("window").width - contentMargin * 2) / 4 - buttonMargin * 2;
+const LAYOUT = {
+  CONTENT_MARGIN: 15,
+  BUTTON_MARGIN: 6,
+  BUTTON_WIDTH: (Dimensions.get("window").width - 30) / 4 - 12,
+} as const;
 
-const bgColor = "rgb(44,50,54)";
-const primaryColor = "rgb(233,234,234)";
-const lightGrayColor = "rgb(114,120,124)";
-const darkGrayColor = "rgb(80,90,94)";
-const highlightColor = "rgb(241,154,55)";
-const shadowColor = "rgba(0,0,0,0.5)";
+const COLORS = {
+  BACKGROUND: "rgb(44,50,54)",
+  PRIMARY: "rgb(233,234,234)",
+  LIGHT_GRAY: "rgb(114,120,124)",
+  DARK_GRAY: "rgb(80,90,94)",
+  HIGHLIGHT: "rgb(241,154,55)",
+  SHADOW: "rgba(0,0,0,0.5)",
+} as const;
 
-type CalculatorButtonProps = {
+const BUTTONS = {
+  LIGHT_GRAY: ["C", "+/-", "%"],
+  DARK_GRAY: [
+    ["7", "8", "9"],
+    ["4", "5", "6"],
+    ["1", "2", "3"],
+    ["0", "."],
+  ],
+  HIGHLIGHT: ["÷", "×", "-", "+", "="],
+} as const;
+
+type ButtonProps = {
   value: string;
   onPress: (value: string) => void;
   backgroundColor: string;
   style?: object;
 };
 
-const CalculatorButton = ({ value, onPress, backgroundColor, style }: CalculatorButtonProps) => (
+const CalculatorButton = ({ value, onPress, backgroundColor, style }: ButtonProps) => (
   <View style={[styles.buttonContainer, style]}>
     <TouchableOpacity
-      key={value}
       onPress={() => onPress(value)}
       style={[styles.button, { backgroundColor }, style]}
       activeOpacity={0.7}
@@ -34,15 +48,6 @@ const CalculatorButton = ({ value, onPress, backgroundColor, style }: Calculator
 );
 
 export default function Index() {
-  const lightGrayButtons = ["C", "+/-", "%"];
-  const darkGrayButtons = [
-    ["7", "8", "9"],
-    ["4", "5", "6"],
-    ["1", "2", "3"],
-    ["0", "."],
-  ];
-  const highlightButtons = ["÷", "×", "-", "+", "="];
-
   const [answerValue, setAnswerValue] = useState("0");
   const [readyToReplace, setReadyToReplace] = useState(true);
   const [memoryValue, setMemoryValue] = useState("0");
@@ -125,34 +130,35 @@ export default function Index() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
         <View style={styles.contentContainer}>
-          <Text key="result-field" style={styles.results}>
-            {answerValue}
-          </Text>
+          <Text style={styles.results}>{answerValue}</Text>
           <View style={styles.calculatorContainer}>
             <View style={styles.leftSection}>
               <View style={styles.row}>
-                {lightGrayButtons.map((button) => (
+                {BUTTONS.LIGHT_GRAY.map((button) => (
                   <CalculatorButton
                     key={button}
                     value={button}
                     onPress={buttonPressed}
-                    backgroundColor={lightGrayColor}
+                    backgroundColor={COLORS.LIGHT_GRAY}
                   />
                 ))}
               </View>
-              {darkGrayButtons.map((row, i) => (
+              {BUTTONS.DARK_GRAY.map((row, i) => (
                 <View key={`row-${i}`} style={styles.row}>
                   {row.map((button) => (
                     <CalculatorButton
                       key={button}
                       value={button}
                       onPress={buttonPressed}
-                      backgroundColor={darkGrayColor}
+                      backgroundColor={COLORS.DARK_GRAY}
                       style={
                         button === "0"
                           ? {
-                              width: buttonWidth * 2 + buttonMargin * 2,
-                              paddingRight: buttonWidth + buttonMargin,
+                              width:
+                                LAYOUT.BUTTON_WIDTH * 2 +
+                                LAYOUT.BUTTON_MARGIN * 2,
+                              paddingRight:
+                                LAYOUT.BUTTON_WIDTH + LAYOUT.BUTTON_MARGIN,
                             }
                           : undefined
                       }
@@ -162,12 +168,12 @@ export default function Index() {
               ))}
             </View>
             <View style={styles.rightSection}>
-              {highlightButtons.map((button) => (
+              {BUTTONS.HIGHLIGHT.map((button) => (
                 <CalculatorButton
                   key={button}
                   value={button}
                   onPress={buttonPressed}
-                  backgroundColor={highlightColor}
+                  backgroundColor={COLORS.HIGHLIGHT}
                 />
               ))}
             </View>
@@ -181,22 +187,22 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: bgColor,
+    backgroundColor: COLORS.BACKGROUND,
   },
   contentContainer: {
     flex: 1,
     justifyContent: "flex-end",
-    margin: contentMargin,
+    margin: LAYOUT.CONTENT_MARGIN,
   },
   results: {
     fontSize: 58,
     fontWeight: "600",
     textAlign: "right",
-    color: primaryColor,
-    margin: buttonMargin,
+    color: COLORS.PRIMARY,
+    margin: LAYOUT.BUTTON_MARGIN,
     marginBottom: 20,
     paddingHorizontal: 10,
-    textShadowColor: shadowColor,
+    textShadowColor: COLORS.SHADOW,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
   },
@@ -214,10 +220,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   buttonContainer: {
-    margin: buttonMargin,
-    width: buttonWidth,
-    height: buttonWidth,
-    shadowColor: shadowColor,
+    margin: LAYOUT.BUTTON_MARGIN,
+    width: LAYOUT.BUTTON_WIDTH,
+    height: LAYOUT.BUTTON_WIDTH,
+    shadowColor: COLORS.SHADOW,
     shadowOffset: { width: 1, height: 2 },
     shadowRadius: 4,
     shadowOpacity: 0.2,
@@ -225,16 +231,16 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    borderRadius: buttonWidth,
+    borderRadius: LAYOUT.BUTTON_WIDTH,
     alignItems: "center",
     justifyContent: "center",
   },
   buttonText: {
-    color: primaryColor,
+    color: COLORS.PRIMARY,
     fontSize: 36,
-    fontWeight: "500",
+    fontWeight: "400",
     textAlign: "center",
-    textShadowColor: shadowColor,
+    textShadowColor: COLORS.SHADOW,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
