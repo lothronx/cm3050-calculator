@@ -1,13 +1,16 @@
+// start of my code
 import { Text, View, StyleSheet, TouchableOpacity, StatusBar, Dimensions } from "react-native";
 import { useState } from "react";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Index() {
+  // Layout constants
   const LAYOUT = {
     CONTENT_MARGIN: 10,
     BUTTON_MARGIN: 6,
   } as const;
 
+  // Color scheme constants
   const COLORS = {
     BACKGROUND: "rgb(44,50,54)",
     PRIMARY: "rgb(233,234,234)",
@@ -17,6 +20,7 @@ export default function Index() {
     SHADOW: "rgba(0,0,0,0.5)",
   } as const;
 
+  // Button text constants
   const BUTTONS = {
     FUNCTION: ["C", "+/-", "%"],
     NUMBER: [
@@ -28,26 +32,29 @@ export default function Index() {
     OPERATOR: ["÷", "×", "-", "+", "="],
   } as const;
 
+  // Calculate safe area dimensions
   const window = Dimensions.get("window");
   const insets = useSafeAreaInsets();
-
-  // Calculate safe area dimensions
   const safeAreaWidth = window.width - insets.left - insets.right;
   const safeAreaHeight = window.height - insets.top - insets.bottom;
 
+  // Determine if the device is in landscape mode
   const isLandscape = window.width > window.height;
 
+  // Calculate button dimensions based on the device orientation
   const buttonWidth =
     (safeAreaWidth - LAYOUT.CONTENT_MARGIN * 2) / (isLandscape ? 5 : 4) - LAYOUT.BUTTON_MARGIN * 2;
   const buttonHeight = isLandscape
     ? (safeAreaHeight - LAYOUT.CONTENT_MARGIN * 2) / 6 - LAYOUT.BUTTON_MARGIN * 2
     : buttonWidth;
 
+  // State variables
   const [answerValue, setAnswerValue] = useState("0");
   const [readyToReplace, setReadyToReplace] = useState(true);
   const [memoryValue, setMemoryValue] = useState("0");
   const [operatorValue, setOperatorValue] = useState("");
 
+  // Button component props
   type ButtonProps = {
     value: string;
     onPress: (value: string) => void;
@@ -55,23 +62,26 @@ export default function Index() {
     style?: object | false;
   };
 
+  // Button component
   const CalculatorButton = ({ value, onPress, backgroundColor, style }: ButtonProps) => (
     <View style={[styles.buttonContainer, style]}>
       <TouchableOpacity
         onPress={() => onPress(value)}
         style={[styles.button, { backgroundColor }, style]}
-        activeOpacity={0.7}
-        pressRetentionOffset={{ top: 10, left: 10, right: 10, bottom: 10 }}>
+        activeOpacity={0.7}>
         <Text style={styles.buttonText}>{value}</Text>
       </TouchableOpacity>
     </View>
   );
 
+  // Handle button press
   const buttonPressed = (value: string): void => {
+    // If the value is a number, handle the number logic
     if (!isNaN(Number(value))) {
       setAnswerValue(handleNumber(value));
     }
 
+    // If the value is a decimal point, append it to the answer value if it's not already there
     if (value === ".") {
       if (!answerValue.includes(".")) {
         setAnswerValue(answerValue + ".");
@@ -79,6 +89,7 @@ export default function Index() {
       }
     }
 
+    // If the value is an operator, handle the operator logic
     if (["÷", "×", "-", "+"].includes(value)) {
       if (operatorValue !== "") {
         setAnswerValue(calculateEquals());
@@ -90,6 +101,7 @@ export default function Index() {
       setOperatorValue(value);
     }
 
+    // If the value is an equals sign, calculate the answer and reset the memory and operator values
     if (value === "=") {
       setAnswerValue(calculateEquals());
       setMemoryValue("0");
@@ -97,14 +109,17 @@ export default function Index() {
       setReadyToReplace(true);
     }
 
+    // If the value is a +/- sign, set the answerValue to be the positive/negative equivalent
     if (value === "+/-") {
       setAnswerValue((parseFloat(answerValue) * -1).toString());
     }
 
+    // If the value is a percentage sign, multiply the current value by 0.01
     if (value === "%") {
       setAnswerValue((parseFloat(answerValue) * 0.01).toString());
     }
 
+    // If the value is a clear sign, reset everything
     if (value === "C") {
       setAnswerValue("0");
       setMemoryValue("0");
@@ -113,12 +128,16 @@ export default function Index() {
     }
   };
 
+  // Handle number logic
   const handleNumber = (value: string): string => {
+    // If the readyToReplace flag is true, set it to false and return the value
     if (readyToReplace) {
       setReadyToReplace(false);
       return value;
     } else {
+      // If the readyToReplace flag is false, append the value to the answerValue and return the new value
       let newValue = answerValue + value;
+      // If the new value starts with "0" and is not a decimal point, remove the leading "0"
       while (newValue.length > 1 && newValue[0] === "0" && newValue[1] !== ".") {
         newValue = newValue.slice(1);
       }
@@ -126,6 +145,7 @@ export default function Index() {
     }
   };
 
+  // Calculate the answer
   const calculateEquals = (): string => {
     let previous = parseFloat(memoryValue);
     let current = parseFloat(answerValue);
@@ -170,16 +190,19 @@ export default function Index() {
       alignItems: "flex-end",
     },
     numberAndFunctionSection: {
-      flexDirection: isLandscape ? "row" : "column-reverse",
+      flexDirection: isLandscape ? "row" : "column-reverse", // If in portrait mode, display the function section above the number section; if in landscape mode, display the function section to the right of the number section
     },
     numberSection: {
       flexDirection: "column",
     },
     functionSection: {
-      flexDirection: isLandscape ? "column" : "row",
+      flexDirection: isLandscape ? "column" : "row", // If in landscape mode, display the function buttons vertically; if in portrait mode, display the function buttons horizontally
     },
     operatorSection: {
       flexDirection: "column",
+      // The rest of the styles are for the landscape mode.
+      // In landscape mode, the operator section is 4 buttons high
+      // with the last button, the "=" button, wrapped to below the "%" button in the function section
       maxHeight: isLandscape ? (buttonHeight + LAYOUT.BUTTON_MARGIN * 2) * 4 : undefined,
       width: isLandscape ? buttonWidth + LAYOUT.BUTTON_MARGIN * 2 : undefined,
       flexWrap: "wrap",
@@ -218,9 +241,13 @@ export default function Index() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
         <View style={styles.contentContainer}>
+          {/* The result field */}
           <Text style={styles.results}>{answerValue}</Text>
+          {/* The calculator container */}
           <View style={styles.calculatorContainer}>
+            {/* The number buttons and function buttons section */}
             <View style={styles.numberAndFunctionSection}>
+              {/* The number buttons section is a 3x4 grid of buttons */}
               <View style={styles.numberSection}>
                 {BUTTONS.NUMBER.map((row, i) => (
                   <View key={`row-${i}`} style={{ flexDirection: "row" }}>
@@ -230,6 +257,7 @@ export default function Index() {
                         value={button}
                         onPress={buttonPressed}
                         backgroundColor={COLORS.DARK_GRAY}
+                        /* If the button is a "0" button, set the width to be 2 buttons wide. Also add padding to the right to make the button text align with the other buttons */
                         style={
                           button === "0"
                             ? {
@@ -243,6 +271,7 @@ export default function Index() {
                   </View>
                 ))}
               </View>
+              {/* The function buttons section */}
               <View style={styles.functionSection}>
                 {BUTTONS.FUNCTION.map((button) => (
                   <CalculatorButton
@@ -254,6 +283,7 @@ export default function Index() {
                 ))}
               </View>
             </View>
+            {/* The operator buttons section */}
             <View style={styles.operatorSection}>
               {BUTTONS.OPERATOR.map((button) => (
                 <CalculatorButton
@@ -270,3 +300,4 @@ export default function Index() {
     </SafeAreaProvider>
   );
 }
+//end of my code
