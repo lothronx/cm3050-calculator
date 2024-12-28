@@ -1,17 +1,10 @@
-import {
-  Text,
-  View,
-  StyleSheet,
-  useWindowDimensions,
-  TouchableOpacity,
-  StatusBar,
-} from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, StatusBar, Dimensions } from "react-native";
 import { useState } from "react";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Index() {
   const LAYOUT = {
-    CONTENT_MARGIN: 15,
+    CONTENT_MARGIN: 10,
     BUTTON_MARGIN: 6,
   } as const;
 
@@ -25,22 +18,30 @@ export default function Index() {
   } as const;
 
   const BUTTONS = {
-    LIGHT_GRAY: ["C", "+/-", "%"],
-    DARK_GRAY: [
+    FUNCTION: ["C", "+/-", "%"],
+    NUMBER: [
       ["7", "8", "9"],
       ["4", "5", "6"],
       ["1", "2", "3"],
       ["0", "."],
     ],
-    HIGHLIGHT: ["÷", "×", "-", "+", "="],
+    OPERATOR: ["÷", "×", "-", "+", "="],
   } as const;
 
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
+  const window = Dimensions.get("window");
+  const insets = useSafeAreaInsets();
+
+  // Calculate safe area dimensions
+  const safeAreaWidth = window.width - insets.left - insets.right;
+  const safeAreaHeight = window.height - insets.top - insets.bottom;
+
+  const isLandscape = window.width > window.height;
 
   const buttonWidth =
-    (width - LAYOUT.CONTENT_MARGIN * 2) / (isLandscape ? 5 : 4) - LAYOUT.BUTTON_MARGIN * 2;
-  const buttonHeight = isLandscape ? (height - LAYOUT.CONTENT_MARGIN * 2) / 10 : buttonWidth;
+    (safeAreaWidth - LAYOUT.CONTENT_MARGIN * 2) / (isLandscape ? 5 : 4) - LAYOUT.BUTTON_MARGIN * 2;
+  const buttonHeight = isLandscape
+    ? (safeAreaHeight - LAYOUT.CONTENT_MARGIN * 2) / 6 - LAYOUT.BUTTON_MARGIN * 2
+    : buttonWidth;
 
   const [answerValue, setAnswerValue] = useState("0");
   const [readyToReplace, setReadyToReplace] = useState(true);
@@ -117,7 +118,11 @@ export default function Index() {
       setReadyToReplace(false);
       return value;
     } else {
-      return answerValue + value;
+      let newValue = answerValue + value;
+      while (newValue.length > 1 && newValue[0] === "0" && newValue[1] !== ".") {
+        newValue = newValue.slice(1);
+      }
+      return newValue;
     }
   };
 
@@ -154,7 +159,7 @@ export default function Index() {
       textAlign: "right",
       color: COLORS.PRIMARY,
       margin: LAYOUT.BUTTON_MARGIN,
-      marginBottom: isLandscape ? 10 : 20,
+      marginBottom: isLandscape ? 10 : 15,
       paddingHorizontal: 10,
       textShadowColor: COLORS.SHADOW,
       textShadowOffset: { width: 0, height: 1 },
@@ -164,14 +169,22 @@ export default function Index() {
       flexDirection: "row",
       alignItems: "flex-end",
     },
-    leftSection: {
-      flex: 3,
+    numberAndFunctionSection: {
+      flexDirection: isLandscape ? "row" : "column-reverse",
     },
-    rightSection: {
-      flex: 1,
+    numberSection: {
+      flexDirection: "column",
     },
-    row: {
-      flexDirection: "row",
+    functionSection: {
+      flexDirection: isLandscape ? "column" : "row",
+    },
+    operatorSection: {
+      flexDirection: "column",
+      maxHeight: isLandscape ? (buttonHeight + LAYOUT.BUTTON_MARGIN * 2) * 4 : undefined,
+      width: isLandscape ? buttonWidth + LAYOUT.BUTTON_MARGIN * 2 : undefined,
+      flexWrap: "wrap",
+      direction: "rtl",
+      justifyContent: "flex-end",
     },
     buttonContainer: {
       margin: LAYOUT.BUTTON_MARGIN,
@@ -207,9 +220,31 @@ export default function Index() {
         <View style={styles.contentContainer}>
           <Text style={styles.results}>{answerValue}</Text>
           <View style={styles.calculatorContainer}>
-            <View style={styles.leftSection}>
-              <View style={styles.row}>
-                {BUTTONS.LIGHT_GRAY.map((button) => (
+            <View style={styles.numberAndFunctionSection}>
+              <View style={styles.numberSection}>
+                {BUTTONS.NUMBER.map((row, i) => (
+                  <View key={`row-${i}`} style={{ flexDirection: "row" }}>
+                    {row.map((button) => (
+                      <CalculatorButton
+                        key={button}
+                        value={button}
+                        onPress={buttonPressed}
+                        backgroundColor={COLORS.DARK_GRAY}
+                        style={
+                          button === "0"
+                            ? {
+                                width: buttonWidth * 2 + LAYOUT.BUTTON_MARGIN * 2,
+                                paddingRight: buttonWidth + LAYOUT.BUTTON_MARGIN,
+                              }
+                            : undefined
+                        }
+                      />
+                    ))}
+                  </View>
+                ))}
+              </View>
+              <View style={styles.functionSection}>
+                {BUTTONS.FUNCTION.map((button) => (
                   <CalculatorButton
                     key={button}
                     value={button}
@@ -218,29 +253,9 @@ export default function Index() {
                   />
                 ))}
               </View>
-              {BUTTONS.DARK_GRAY.map((row, i) => (
-                <View key={`row-${i}`} style={styles.row}>
-                  {row.map((button) => (
-                    <CalculatorButton
-                      key={button}
-                      value={button}
-                      onPress={buttonPressed}
-                      backgroundColor={COLORS.DARK_GRAY}
-                      style={
-                        button === "0"
-                          ? {
-                              width: buttonWidth * 2 + LAYOUT.BUTTON_MARGIN * 2,
-                              paddingRight: buttonWidth + LAYOUT.BUTTON_MARGIN,
-                            }
-                          : undefined
-                      }
-                    />
-                  ))}
-                </View>
-              ))}
             </View>
-            <View style={styles.rightSection}>
-              {BUTTONS.HIGHLIGHT.map((button) => (
+            <View style={styles.operatorSection}>
+              {BUTTONS.OPERATOR.map((button) => (
                 <CalculatorButton
                   key={button}
                   value={button}
