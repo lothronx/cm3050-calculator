@@ -1,5 +1,13 @@
 // start of my code
-import { Text, View, StyleSheet, TouchableOpacity, StatusBar, Dimensions } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  StatusBar,
+  Dimensions,
+  ScrollView,
+} from "react-native";
 import { useState } from "react";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -49,17 +57,15 @@ export default function Index() {
     : buttonWidth;
 
   // State variables
-  const [answerValue, setAnswerValue] = useState("0");
-  const [readyToReplace, setReadyToReplace] = useState(true);
-  const [memoryValue, setMemoryValue] = useState("0");
-  const [operatorValue, setOperatorValue] = useState("");
+  const [lastInputType, setLastInputType] = useState<"number" | "operator" | "">("");
+  const [expression, setExpression] = useState("0");
 
   // Button component props
   type ButtonProps = {
     value: string;
     onPress: (value: string) => void;
     backgroundColor: string;
-    style?: object | false;
+    style?: object;
   };
 
   // Button component
@@ -76,91 +82,141 @@ export default function Index() {
 
   // Handle button press
   const buttonPressed = (value: string): void => {
-    // If the value is a number, handle the number logic
-    if (!isNaN(Number(value))) {
-      setAnswerValue(handleNumber(value));
-    }
-
-    // If the value is a decimal point, append it to the answer value if it's not already there
-    if (value === ".") {
-      if (!answerValue.includes(".")) {
-        setAnswerValue(answerValue + ".");
-        setReadyToReplace(false);
-      }
-    }
-
-    // If the value is an operator, handle the operator logic
-    if (["÷", "×", "-", "+"].includes(value)) {
-      if (operatorValue !== "") {
-        setAnswerValue(calculateEquals());
-        setMemoryValue(calculateEquals());
-      } else {
-        setMemoryValue(answerValue);
-      }
-      setReadyToReplace(true);
-      setOperatorValue(value);
-    }
-
-    // If the value is an equals sign, calculate the answer and reset the memory and operator values
-    if (value === "=") {
-      setAnswerValue(calculateEquals());
-      setMemoryValue("0");
-      setOperatorValue("");
-      setReadyToReplace(true);
-    }
-
-    // If the value is a +/- sign, set the answerValue to be the positive/negative equivalent
-    if (value === "+/-") {
-      setAnswerValue((parseFloat(answerValue) * -1).toString());
-    }
-
-    // If the value is a percentage sign, multiply the current value by 0.01
-    if (value === "%") {
-      setAnswerValue((parseFloat(answerValue) * 0.01).toString());
-    }
-
-    // If the value is a clear sign, reset everything
     if (value === "C") {
-      setAnswerValue("0");
-      setMemoryValue("0");
-      setOperatorValue("");
-      setReadyToReplace(true);
+      setLastInputType("");
+      setExpression("0");
+    }
+    if (value === "=") {
+      setLastInputType("");
+      setExpression(calculateEquals());
+    }
+
+    // Handle numbers and number-like values
+    if (!isNaN(Number(value)) || [".", "+/-", "%"].includes(value)) {
+      setLastInputType("number");
+      setExpression(handleNumber(value));
+    }
+
+    // Handle operators
+    if (["÷", "×", "-", "+"].includes(value)) {
+      handleOperator(value);
     }
   };
 
-  // Handle number logic
-  const handleNumber = (value: string): string => {
-    // If the readyToReplace flag is true, set it to false and return the value
-    if (readyToReplace) {
-      setReadyToReplace(false);
-      return value;
+  // Handle operator input
+  const handleOperator = (operator: string): void => {
+    if (lastInputType === "operator") {
+      setExpression(expression.slice(0, -1) + operator);
     } else {
-      // If the readyToReplace flag is false, append the value to the answerValue and return the new value
-      let newValue = answerValue + value;
-      // If the new value starts with "0" and is not a decimal point, remove the leading "0"
-      while (newValue.length > 1 && newValue[0] === "0" && newValue[1] !== ".") {
-        newValue = newValue.slice(1);
-      }
-      return newValue;
+      setLastInputType("operator");
+      setExpression(expression + operator);
     }
   };
 
-  // Calculate the answer
-  const calculateEquals = (): string => {
-    let previous = parseFloat(memoryValue);
-    let current = parseFloat(answerValue);
-    switch (operatorValue) {
-      case "÷":
-        return (previous / current).toString();
-      case "×":
-        return (previous * current).toString();
-      case "-":
-        return (previous - current).toString();
-      case "+":
-        return (previous + current).toString();
-      default:
-        return current.toString();
+  // Handle number input
+  const handleNumber = (value: string): string => {
+    const lastOperatorIndex = findLastOperatorIndex();
+    const currentNumber = getCurrentNumber(lastOperatorIndex);
+    const expressionBeforeCurrentNumber = getExpressionBeforeNumber(lastOperatorIndex);
+
+    // Handle special cases
+    if (shouldReturnUnchanged(value, currentNumber)) {
+      return expression;
     }
+
+    // Handle +/- toggle
+    if (value === "+/-") {
+      return handleNegation(currentNumber, expressionBeforeCurrentNumber);
+    }
+
+    // Handle zero input
+    if (value === "0" && currentNumber === "0") {
+      return expression;
+    }
+
+    // Handle number replacing zero
+    if (parseInt(value) && currentNumber === "0") {
+      return expressionBeforeCurrentNumber + value;
+    }
+
+    // Handle  number input right after a closing parenthesis using the logic of Apple Calculator
+    if (expression.endsWith(")")) {
+      return expression + "×" + value;
+    }
+
+    return expression + value;
+  };
+
+  // Helper functions for number handling
+  const findLastOperatorIndex = (): number => {
+    return Math.max(
+      ...["÷", "×", "+"].map((op) => expression.lastIndexOf(op)),
+      ...expression.split("").reduce((indices, char, i) => {
+        if (char === "-" && expression[i - 1] !== "(") {
+          indices.push(i);
+        }
+        return indices;
+      }, [] as number[])
+    );
+  };
+
+  const getCurrentNumber = (lastOperatorIndex: number): string => {
+    return lastOperatorIndex === -1 ? expression : expression.slice(lastOperatorIndex + 1);
+  };
+
+  const getExpressionBeforeNumber = (lastOperatorIndex: number): string => {
+    return lastOperatorIndex === -1 ? "" : expression.slice(0, lastOperatorIndex + 1);
+  };
+
+  const shouldReturnUnchanged = (value: string, currentNumber: string): boolean => {
+    if (
+      value === "." &&
+      (!currentNumber || currentNumber.includes(".") || expression.endsWith(")"))
+    ) {
+      return true;
+    }
+    if (
+      value === "%" &&
+      (!currentNumber || currentNumber.includes("%") || expression.endsWith(")"))
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const handleNegation = (currentNumber: string, expressionBeforeCurrentNumber: string): string => {
+    if (currentNumber.startsWith("(-")) {
+      return expressionBeforeCurrentNumber + currentNumber.slice(2, -1);
+    }
+    if (currentNumber) {
+      return expressionBeforeCurrentNumber + "(-" + currentNumber + ")";
+    }
+    return expression;
+  };
+
+  // Calculate the final result
+  const calculateEquals = (): string => {
+    try {
+      const evalExpression = prepareExpressionForEvaluation();
+      const result = new Function("return (" + evalExpression + ")")();
+      return formatResult(result);
+    } catch (error) {
+      return "Error";
+    }
+  };
+
+  const prepareExpressionForEvaluation = (): string => {
+    return expression
+      .replace(/×/g, "*")
+      .replace(/÷/g, "/")
+      .replace(/(\d+\.?\d*|\))%/g, (match) => {
+        const num = match.endsWith("%") ? parseFloat(match.slice(0, -1)) / 100 : parseFloat(match);
+        return num.toString();
+      });
+  };
+
+  const formatResult = (result: number): string => {
+    return Number.isInteger(result) ? result.toString() : result.toFixed(8).replace(/\.?0+$/, "");
   };
 
   const styles = StyleSheet.create({
@@ -173,14 +229,17 @@ export default function Index() {
       justifyContent: "flex-end",
       margin: LAYOUT.CONTENT_MARGIN,
     },
-    results: {
-      fontSize: isLandscape ? 38 : 58,
-      fontWeight: "600",
-      textAlign: "right",
-      color: COLORS.PRIMARY,
+    resultsField: {
       margin: LAYOUT.BUTTON_MARGIN,
       marginBottom: isLandscape ? 10 : 15,
+      flexGrow: 0,
+    },
+    results: {
+      fontSize: isLandscape ? 38 : 56,
+      fontWeight: "500",
+      textAlign: "right",
       paddingHorizontal: 10,
+      color: COLORS.PRIMARY,
       textShadowColor: COLORS.SHADOW,
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 1,
@@ -242,7 +301,25 @@ export default function Index() {
         <StatusBar barStyle="light-content" />
         <View style={styles.contentContainer}>
           {/* The result field */}
-          <Text style={styles.results}>{answerValue}</Text>
+          <ScrollView
+            horizontal
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: "flex-end",
+            }}
+            style={styles.resultsField}
+            showsHorizontalScrollIndicator={false}
+            maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+            ref={(scrollView) => {
+              // Scroll to end whenever expression changes
+              if (scrollView) {
+                setTimeout(() => {
+                  scrollView.scrollToEnd({ animated: false });
+                }, 0);
+              }
+            }}>
+            <Text style={styles.results}>{expression}</Text>
+          </ScrollView>
           {/* The calculator container */}
           <View style={styles.calculatorContainer}>
             {/* The number buttons and function buttons section */}
