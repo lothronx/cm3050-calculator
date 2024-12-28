@@ -2,8 +2,8 @@ import { Text, View, StyleSheet, Dimensions, TouchableOpacity, StatusBar } from 
 import { useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-const contentMargin = 10;
-const buttonMargin = 5;
+const contentMargin = 15;
+const buttonMargin = 6;
 const buttonWidth = (Dimensions.get("window").width - contentMargin * 2) / 4 - buttonMargin * 2;
 
 const bgColor = "rgb(44,50,54)";
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     textShadowColor: shadowColor,
     textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 1,
   },
   calculatorContainer: {
     flexDirection: "row",
@@ -218,9 +218,10 @@ const styles = StyleSheet.create({
     width: buttonWidth,
     height: buttonWidth,
     shadowColor: shadowColor,
-    shadowOffset: { width: 2, height: 2 },
-    shadowRadius: 2,
-    elevation: 8,
+    shadowOffset: { width: 1, height: 2 },
+    shadowRadius: 4,
+    shadowOpacity: 0.2,
+    elevation: 4,
   },
   button: {
     flex: 1,
