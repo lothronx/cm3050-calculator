@@ -1,10 +1,11 @@
+// start of my code
 // Layout constants
 export const LAYOUT = {
   CONTENT_MARGIN: 10,
   BUTTON_MARGIN: 6,
 } as const;
 
-// Color scheme constants
+// Color scheme
 export const COLORS = {
   BACKGROUND: "rgb(44,50,54)",
   PRIMARY: "rgb(233,234,234)",
@@ -14,7 +15,7 @@ export const COLORS = {
   SHADOW: "rgba(0,0,0,0.5)",
 } as const;
 
-// Button text constants
+// Calculator buttons
 export const BUTTONS = {
   FUNCTION: ["C", "+/-", "%"],
   NUMBER: [
@@ -25,3 +26,4 @@ export const BUTTONS = {
   ],
   OPERATOR: ["÷", "×", "-", "+", "="],
 } as const;
+//end of my code
